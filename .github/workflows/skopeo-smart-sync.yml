@@ -1,0 +1,103 @@
+name: 🛡️ Smart Docker Mirror
+
+on:
+  schedule:
+    # 每天北京时间上午 10 点 (UTC 02:00) 准时拉取
+    - cron: '0 2 * * *'
+  workflow_dispatch: # 开启手动点击运行功能
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.images }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Parse JSON
+        id: set-matrix
+        run: |
+          content=$(jq -c . images.json)
+          echo "images=$content" >> $GITHUB_OUTPUT
+
+  smart-sync:
+    needs: prepare-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # 某个镜像挂了，不影响其他镜像继续执行
+      matrix:
+        image: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+        
+    steps:
+      - name: Install Skopeo & jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo jq
+
+      # 🔑 防限机制 1：强制身份认证
+      # 登录后拉取限额从每 IP 的 100次 提升为账户级的 200次/6小时
+      - name: Authenticate to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Smart Check & Sync
+        run: |
+          source_repo="${{ matrix.image.source }}"
+          target_repo="${{ matrix.image.target }}"
+          tag_regex="${{ matrix.image.tag_regex }}"
+          
+          echo "========================================================"
+          echo "📦 处理镜像: $source_repo"
+          echo "========================================================"
+
+          # 🔍 防删库机制：仅读取信息不删除
+          # 先获取我们自己仓库里已有的备份（读取列表不消耗 Pull 额度）
+          echo "1. 查询我的备份库标签..."
+          my_tags=$(skopeo list-tags "docker://${target_repo}" 2>/dev/null | jq -r ".Tags[]" || echo "")
+          
+          # 获取源仓库所有标签。用 || true 捕获错误，防止原作者删库导致工作流崩溃
+          echo "2. 查询上游源仓库标签..."
+          raw_tags=$(skopeo list-tags "docker://${source_repo}" 2>/dev/null || true)
+          
+          if [ -z "$raw_tags" ] || ! echo "$raw_tags" | jq -e . >/dev/null 2>&1; then
+            echo "🚨 警告: 无法获取源仓库标签！"
+            echo "原因: 原作者可能已删库、设为私有或 Registry 故障。"
+            echo "保护机制生效: 脚本将在此中止本项目的检查，您备份的镜像依然安全。"
+            exit 0
+          fi
+          
+          # 通过 Regex 正则过滤有效正式版，排除测试版
+          source_tags=$(echo "$raw_tags" | jq -r ".Tags[] | select(test(\"${tag_regex}\"))")
+          
+          echo "⚙️ 3. 增量对比开始..."
+          echo "$source_tags" | while read tag; do
+          
+            # 🛡️ 防限机制 2：智能跳过
+            # 如果本地已经有这个 tag（且不是 latest），直接跳过，0 额度消耗！
+            if echo "$my_tags" | grep -qx "$tag" && [ "$tag" != "latest" ]; then
+              echo "⏭️ [跳过] $tag 已经备份，安全跳过。"
+              continue
+            fi
+            
+            echo "--------------------------------------------------------"
+            echo "🚀 [拉取] 发现新版本或 latest 变更，开始同步: $tag"
+            
+            # 使用 --all 拷贝所有架构 (amd64 + arm64)，原汁原味
+            skopeo copy \
+              --all \
+              --retry-times 3 \
+              "docker://${source_repo}:${tag}" \
+              "docker://${target_repo}:${tag}" || echo "❌ $tag 同步失败，稍后继续下一个"
+              
+            echo "✅ $tag 同步成功！"
+            
+            # 🛡️ 防限机制 3：慢速拉取
+            # 成功搬运一次后休眠 5 秒，防止触发 Docker Hub 429 防并发封控
+            echo "⏳ 休眠 5 秒，保护 API 额度..."
+            sleep 5
+          done
+
+          echo "🎉 $source_repo 镜像同步任务结束！"
