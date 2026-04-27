@@ -69,8 +69,8 @@ jobs:
             exit 0
           fi
           
-          # 通过 Regex 正则过滤有效正式版，排除测试版
-          source_tags=$(echo "$raw_tags" | jq -r ".Tags[] | select(test(\"${tag_regex}\"))")
+          # 通过 Regex 正则过滤有效正式版，排除测试版（使用 --arg 安全传递正则）
+          source_tags=$(echo "$raw_tags" | jq -r --arg rx "$tag_regex" '.Tags[] | select(test($rx))')
           
           echo "⚙️ 3. 增量对比开始..."
           echo "$source_tags" | while read tag; do
@@ -101,3 +101,4 @@ jobs:
           done
 
           echo "🎉 $source_repo 镜像同步任务结束！"
+          
