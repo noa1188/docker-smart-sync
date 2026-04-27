@@ -2,6 +2,6 @@
   {
     "source": "docker.io/vaultwarden/server",
     "target": "docker.io/bert062/vaultwarde",
-    "tag_regex": "^(2\\.[0-9]+(\\.[0-9]+)?-alpine|latest)$"
+    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+(-alpine)?|latest)$"
   }
 ]
