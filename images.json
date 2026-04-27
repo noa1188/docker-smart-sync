@@ -1,0 +1,17 @@
+[
+  {
+    "source": "ghcr.io/alireza0/x-ui",
+    "target": "docker.io/你的用户名/x-ui",
+    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+|latest)$"
+  },
+  {
+    "source": "ghcr.io/alireza0/s-ui",
+    "target": "docker.io/你的用户名/sing-box",
+    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+|latest)$"
+  },
+  {
+    "source": "docker.io/library/caddy",
+    "target": "docker.io/你的用户名/caddy",
+    "tag_regex": "^(2\\.[0-9]+(\\.[0-9]+)?-alpine|latest)$"
+  }
+]
