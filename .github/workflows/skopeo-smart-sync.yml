@@ -96,8 +96,10 @@ jobs:
             
             # 🛡️ 防限机制 3：慢速拉取
             # 成功搬运一次后休眠 5 秒，防止触发 Docker Hub 429 防并发封控
-            echo "⏳ 休眠 5 秒，保护 API 额度..."
-            sleep 5
+            # 生成 5 到 15 之间的随机数
+            sleep_time=$(( RANDOM % 11 + 5 ))
+            echo "⏳ 随机休眠 $sleep_time 秒，保护 API 额度并防止触发反爬虫..."
+            sleep $sleep_time
           done
 
           echo "🎉 $source_repo 镜像同步任务结束！"
