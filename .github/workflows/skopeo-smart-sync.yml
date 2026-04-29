@@ -3,7 +3,7 @@ name: 🛡️ Smart Docker Mirror
 on:
   schedule:
     # 每天北京时间上午 10 点 (UTC 02:00) 准时拉取
-    - cron: '0 2 * * *'
+    - cron: '0 2 */3 * *'
   workflow_dispatch: # 开启手动点击运行功能
 
 jobs:
