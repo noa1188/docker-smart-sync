@@ -25,6 +25,7 @@ jobs:
     needs: prepare-matrix
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1    # 👈 强制每次只运行 1 个任务（完全串行）
       fail-fast: false # 某个镜像挂了，不影响其他镜像继续执行
       matrix:
         image: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
