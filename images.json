@@ -22,6 +22,6 @@
   {
     "source": "ghcr.io/openlistteam/openlist-git",
     "target": "docker.io/bert062/openlist",
-    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+(-aio)?+(-ffmpeg)?+(-aria2)?+(-lite)?+(-lite-aio)?+(-lite-ffmpeg)?+(-lite-aria2)?|latest)$"
+    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+(-(aio|ffmpeg|aria2|lite|lite-aio|lite-ffmpeg|lite-aria2))?|latest)$"
   }
 ]
