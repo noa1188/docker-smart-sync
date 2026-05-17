@@ -18,5 +18,10 @@
     "source": "ghcr.io/mhsanaei/3x-ui",
     "target": "docker.io/bert062/3x-ui",
     "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+|latest)$"
+  },
+  {
+    "source": "ghcr.io/openlistteam/openlist-git",
+    "target": "docker.io/bert062/openlist",
+    "tag_regex": "^(v?[0-9]+\\.[0-9]+\\.[0-9]+|latest)$"
   }
 ]
